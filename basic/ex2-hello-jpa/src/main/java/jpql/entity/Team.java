@@ -1,11 +1,11 @@
-package hellojpa.entity;
+package jpql.entity;
 
 import javax.persistence.*;
 import java.util.ArrayList;
 import java.util.List;
 
 @Entity
-public class Team extends BaseEntity {
+public class Team {
     @Id
     @GeneratedValue
     @Column(name = "TEAM_ID")
@@ -13,9 +13,8 @@ public class Team extends BaseEntity {
 
     private String name;
 
-    // 나는 team에 의해 관리가 된다
-    @OneToMany(mappedBy = "team", fetch = FetchType.EAGER)
-    private List<Member> members = new ArrayList<>(); // 초기화 하는 것이 관례
+    @OneToMany(mappedBy = "team")
+    private List<Member> members = new ArrayList<>();
 
     public Long getId() {
         return id;
@@ -39,10 +38,5 @@ public class Team extends BaseEntity {
 
     public void setMembers(List<Member> members) {
         this.members = members;
-    }
-
-    public void addMember(Member member) {
-        member.setTeam(this);
-        members.add(member);
     }
 }
