@@ -21,13 +21,13 @@ public class JpaMain {
         // 트랜잭션코드는 정석적으로 try-catch로 commit/rollback을 제어 한다.
         try {
             // 1. 등록
-            /*Member member = new Member();
+            Member member = new Member();
             member.setId(1L);
             member.setName("HelloA");
 
             em.persist(member);
 
-            tx.commit();*/
+            tx.commit();
 
             // 2. 조회
             /*Member findMember = em.find(Member.class, 1L);
@@ -38,22 +38,22 @@ public class JpaMain {
             tx.commit();*/
 
             // 3. 삭제
-            Member findMember = em.find(Member.class, 1L);
-            em.remove(findMember);
-
-            tx.commit();
-
-            // 4. 수정
             /*Member findMember = em.find(Member.class, 1L);
-            findMember.setName("HelloJPA");
+            em.remove(findMember);
 
             tx.commit();*/
 
+            // 4. 수정
+            Member findMember = em.find(Member.class, 1L);
+            findMember.setName("HelloJPA");
+
+            /*tx.commit();*/
+
             // JPQL
-            List<Member> result = em.createQuery("select m from Member as m", Member.class)
+            //List<Member> result = em.createQuery("select m from Member as m", Member.class)
                     //.setFirstResult(5)
                     //.setMaxResults(8)
-                    .getResultList();
+                    //.getResultList();
         } catch (Exception e) {
             tx.rollback();
         } finally {
