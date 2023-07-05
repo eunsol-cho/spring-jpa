@@ -12,3 +12,7 @@
 #### Jan 16, 2022 ~ Jan 30, 2022
 [💻 Source code](https://github.com/eunsolJo/spring-jpa/tree/main/basic) <br>
 [✏️ Summary](https://golden-age-825.notion.site/ORM-JPA-0e363533e9b149a8bb3901f597267153)
+
+### [🔗](https://www.inflearn.com/course/querydsl-%EC%8B%A4%EC%A0%84/dashboard) 실전! QueryDsl
+#### Jul 5, 2023 ~ 
+[💻 Source code](https://github.com/eunsolJo/spring-jpa/tree/main/querydsl) <br>
