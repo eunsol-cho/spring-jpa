@@ -1,5 +1,6 @@
 package study.querydsl;
 
+import static com.querydsl.jpa.JPAExpressions.*;
 import static org.assertj.core.api.Assertions.*;
 import static study.querydsl.entity.QMember.*;
 import static study.querydsl.entity.QTeam.*;
@@ -7,6 +8,8 @@ import static study.querydsl.entity.QTeam.*;
 import java.util.List;
 
 import javax.persistence.EntityManager;
+import javax.persistence.EntityManagerFactory;
+import javax.persistence.PersistenceUnit;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -16,6 +19,9 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.querydsl.core.QueryResults;
 import com.querydsl.core.Tuple;
+import com.querydsl.core.types.dsl.CaseBuilder;
+import com.querydsl.core.types.dsl.Expressions;
+import com.querydsl.jpa.JPAExpressions;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 
 import study.querydsl.entity.Member;
@@ -168,6 +174,10 @@ public class QuerydslBasicTest {
 
 	}
 
+	/*****************
+	 * 정렬
+	 *****************/
+
 	/**
 	 * 회원 정렬 순서
 	 * 1. 회원 나이 내림차순(desc)
@@ -196,6 +206,10 @@ public class QuerydslBasicTest {
 		assertThat(memberNull.getUsername()).isNull();
 
 	}
+
+	/*****************
+	 * 페이징
+	 *****************/
 
 	@Test
 	public void paging1() {
@@ -227,6 +241,10 @@ public class QuerydslBasicTest {
 		assertThat(queryResults.getResults().size()).isEqualTo(2);
 
 	}
+
+	/*****************
+	 * 집합
+	 *****************/
 
 	/**
 	 * JPQL
@@ -283,6 +301,9 @@ public class QuerydslBasicTest {
 
 	}
 
+	/*****************
+	 * 조인
+	 *****************/
 
 	/**
 	 * 팀 A에 소속된 모든 회원
@@ -326,5 +347,191 @@ public class QuerydslBasicTest {
 				.containsExactly("teamA", "teamB");
 
 	}
+
+	/**
+	 * 예) 회원과 팀을 조인하면서, 팀 이름이 teamA인 팀만 조인, 회원은 모두 조회
+	 * JPQL: SELECT m, t FROM Member m LEFT JOIN m.team t on t.name = 'teamA'
+	 * SQL: SELECT m.*, t.* FROM Member m LEFT JOIN Team t ON m.TEAM_ID=t.id and
+	 t.name='teamA'
+	 */
+	@Test
+	public void join_on_filtering() throws Exception {
+
+		List<Tuple> result = queryFactory
+				.select(member, team)
+				.from(member)
+				.leftJoin(member.team, team).on(team.name.eq("teamA"))
+				.fetch();
+
+		for (Tuple tuple : result) {
+			System.out.println("tuple = " + tuple);
+		}
+
+	}
+
+	/**
+	 * 2. 연관관계 없는 엔티티 외부 조인
+	 * 예) 회원의 이름과 팀의 이름이 같은 대상 외부 조인
+	 * JPQL: SELECT m, t FROM Member m LEFT JOIN Team t on m.username = t.name
+	 * SQL: SELECT m.*, t.* FROM Member m LEFT JOIN Team t ON m.username = t.name
+	 */
+	@Test
+	public void join_on_no_relation() throws Exception {
+
+		em.persist(new Member("teamA"));
+		em.persist(new Member("teamB"));
+
+		List<Tuple> result = queryFactory
+				.select(member, team)
+				.from(member)
+				.leftJoin(team).on(member.username.eq(team.name))
+				.fetch();
+
+		for (Tuple tuple : result) {
+			System.out.println("t=" + tuple);
+		}
+
+	}
+
+	@PersistenceUnit
+	EntityManagerFactory emf;
+
+	@Test
+	public void fetchJoinNo() throws Exception {
+		em.flush();
+		em.clear();
+
+		Member findMember = queryFactory
+				.selectFrom(member)
+				.where(member.username.eq("member1"))
+				.fetchOne();
+
+		boolean loaded = emf.getPersistenceUnitUtil().isLoaded(findMember.getTeam());
+		assertThat(loaded).as("페치 조인 미적용").isFalse();
+	}
+
+	@Test
+	public void fetchJoinUse() throws Exception {
+		em.flush();
+		em.clear();
+
+		Member findMember = queryFactory
+				.selectFrom(member)
+				.join(member.team, team).fetchJoin()
+				.where(member.username.eq("member1"))
+				.fetchOne();
+
+		boolean loaded = emf.getPersistenceUnitUtil().isLoaded(findMember.getTeam());
+		assertThat(loaded).as("페치 조인 적용").isTrue();
+	}
+
+	/*****************
+	 * 서브쿼리
+	 *****************/
+
+	/**
+	 * 나이가 가장 많은 회원 조회
+	 */
+	@Test
+	public void subQuery() throws Exception {
+
+		QMember memberSub = new QMember("memberSub");
+
+		List<Member> result = queryFactory
+				.selectFrom(member)
+				.where(member.age.eq(
+						select(memberSub.age.max())
+								.from(memberSub)
+				))
+				.fetch();
+
+		assertThat(result).extracting("age")
+				.containsExactly(40);
+	}
+
+	/**
+	 * 나이가 평균 나이 이상인 회원
+	 */
+	@Test
+	public void subQueryGoe() throws Exception {
+
+		QMember subMember = new QMember("sub");
+
+		List<Member> result = queryFactory
+				.selectFrom(member)
+				.where(member.age.goe(
+						select(subMember.age.max())
+								.from(subMember)
+				))
+				.fetch();
+
+		assertThat(result).extracting("age")
+				.containsExactly(30,40);
+	}
+
+	/**
+	 * 서브쿼리 여러 건 처리, in 사용
+	 */
+
+	/**
+	 * select 절에 subquery
+	 */
+
+
+	/*****************
+	 * Case문
+	 *****************/
+
+	@Test
+	public void simpleCase() throws Exception {
+
+		List<String> result = queryFactory
+				.select(member.age
+						.when(10).then("열살")
+						.when(20).then("스무살")
+						.otherwise("기타"))
+				.from(member)
+				.fetch();
+
+	}
+
+	@Test
+	public void complexCase() throws Exception {
+
+		List<String> result = queryFactory
+				.select(new CaseBuilder()
+						.when(member.age.between(0, 20)).then("0~20살")
+						.when(member.age.between(21, 30)).then("21~30살")
+						.otherwise("기타"))
+				.from(member)
+				.fetch();
+
+	}
+
+	/*****************
+	 * 상수, 문자 더하기
+	 *****************/
+
+	@Test
+	public void constant() throws Exception {
+
+		Tuple result = queryFactory
+				.select(member.username, Expressions.constant("A"))
+				.from(member)
+				.fetchFirst();
+
+	}
+
+	@Test
+	public void concat() throws Exception {
+
+		String result = queryFactory
+				.select(member.username.concat("_").concat(member.age.stringValue()))
+				.from(member)
+				.where(member.username.eq("member1"))
+				.fetchOne();
+
+	}
+
 
 }
