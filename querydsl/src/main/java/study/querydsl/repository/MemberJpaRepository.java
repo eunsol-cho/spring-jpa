@@ -9,6 +9,8 @@ import java.util.Optional;
 
 import javax.persistence.EntityManager;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Repository;
 import org.springframework.util.StringUtils;
 
