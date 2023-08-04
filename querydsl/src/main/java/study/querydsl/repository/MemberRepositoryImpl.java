@@ -11,6 +11,7 @@ import javax.persistence.EntityManager;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.repository.support.QuerydslRepositorySupport;
 import org.springframework.data.repository.support.PageableExecutionUtils;
 
 import com.querydsl.core.QueryResults;
@@ -32,9 +33,11 @@ public class MemberRepositoryImpl implements MemberRepositoryCustom {
 	public MemberRepositoryImpl(EntityManager em) {
 		this.queryFactory = new JPAQueryFactory(em);
 	}
+
 	@Override
 	//회원명, 팀명, 나이(ageGoe, ageLoe)
 	public List<MemberTeamDto> search(MemberSearchCondition condition) {
+
 		return queryFactory
 			.select(new QMemberTeamDto(
 					member.id,
